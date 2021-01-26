@@ -110,6 +110,26 @@ bool InsertLaunchLua(std::vector<std::wstring> &commandLine, std::string &firstL
 		}
 	}
 
+	// Check for the registry key left by the installer
+	// HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Path of Building Community\InstallLocation
+	{
+		DWORD dwType = 0;
+		DWORD dwSize = MAX_PATH;
+		wchar_t wszValue[MAX_PATH]{};
+		DWORD dwStatus = RegGetValue(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Path of Building Community", L"InstallLocation", RRF_RT_REG_SZ, &dwType, wszValue, &dwSize);
+		if (dwStatus == ERROR_SUCCESS && dwSize > sizeof(wchar_t))
+		{
+			// Strip the quotes around the value
+			std::wstring basePath = wszValue[0] == L'\"' ? std::wstring(wszValue + 1, wszValue + dwSize / sizeof(wchar_t) - 2) : std::wstring(wszValue, wszValue + dwSize / sizeof(wchar_t) - 1);
+			basePath += L"\\Launch.lua";
+			if (IsValidLuaFile(basePath, firstLine))
+			{
+				commandLine.insert(commandLine.begin() + 1, basePath);
+				return true;
+			}
+		}
+	}
+
 	// Look in the %APPDATA% folder, which is where the PoB Fork installer puts the lua files
 	{
 		wchar_t wszAppDataPath[MAX_PATH]{};
