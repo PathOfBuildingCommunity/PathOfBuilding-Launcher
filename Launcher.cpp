@@ -72,6 +72,25 @@ bool IsValidLuaFile(const std::wstring &path, std::string &firstLine)
 	return true;
 }
 
+bool FindLaunchLua(std::wstring basePath, std::vector<std::wstring> &commandLine, std::string &firstLine)
+{
+	std::wstring launchPath = basePath + L"Launch.lua";
+	if (IsValidLuaFile(launchPath, firstLine))
+	{
+		commandLine.insert(commandLine.begin() + 1, launchPath);
+		return true;
+	}
+
+	launchPath = basePath + L"src\\Launch.lua";
+	if (IsValidLuaFile(launchPath, firstLine))
+	{
+		commandLine.insert(commandLine.begin() + 1, launchPath);
+		return true;
+	}
+
+	return false;
+}
+
 bool InsertLaunchLua(std::vector<std::wstring> &commandLine, std::string &firstLine)
 {
 	// Determine if the first command-line parameter is the location of a valid launcher lua file
@@ -91,7 +110,7 @@ bool InsertLaunchLua(std::vector<std::wstring> &commandLine, std::string &firstL
 
 	// Search for the Launch.lua file in various locations it may exist
 
-	// Look in the same directory as the executable
+	// Look in the same directory as the executable as well as the "src" folder within that
 	{
 		wchar_t wszModuleFilename[MAX_PATH]{};
 		if (GetModuleFileName(nullptr, wszModuleFilename, MAX_PATH) > 0)
@@ -100,10 +119,8 @@ bool InsertLaunchLua(std::vector<std::wstring> &commandLine, std::string &firstL
 			if (wszLastSlash != nullptr)
 			{
 				std::wstring basePath(wszModuleFilename, wszLastSlash + 1);
-				basePath += L"Launch.lua";
-				if (IsValidLuaFile(basePath, firstLine))
+				if (FindLaunchLua(basePath, commandLine, firstLine))
 				{
-					commandLine.insert(commandLine.begin() + 1, basePath);
 					return true;
 				}
 			}
@@ -121,10 +138,8 @@ bool InsertLaunchLua(std::vector<std::wstring> &commandLine, std::string &firstL
 		{
 			// Strip the quotes around the value
 			std::wstring basePath = wszValue[0] == L'\"' ? std::wstring(wszValue + 1, wszValue + dwSize / sizeof(wchar_t) - 2) : std::wstring(wszValue, wszValue + dwSize / sizeof(wchar_t) - 1);
-			basePath += L"\\Launch.lua";
-			if (IsValidLuaFile(basePath, firstLine))
+			if (FindLaunchLua(basePath, commandLine, firstLine))
 			{
-				commandLine.insert(commandLine.begin() + 1, basePath);
 				return true;
 			}
 		}
@@ -136,10 +151,9 @@ bool InsertLaunchLua(std::vector<std::wstring> &commandLine, std::string &firstL
 		if (SHGetSpecialFolderPath(nullptr, wszAppDataPath, CSIDL_APPDATA, false))
 		{
 			std::wstring basePath(wszAppDataPath);
-			basePath += L"\\Path of Building Community\\Launch.lua";
-			if (IsValidLuaFile(basePath, firstLine))
+			basePath += L"\\Path of Building Community\\";
+			if (FindLaunchLua(basePath, commandLine, firstLine))
 			{
-				commandLine.insert(commandLine.begin() + 1, basePath);
 				return true;
 			}
 		}
@@ -151,10 +165,9 @@ bool InsertLaunchLua(std::vector<std::wstring> &commandLine, std::string &firstL
 		if (SHGetSpecialFolderPath(nullptr, wszAppDataPath, CSIDL_COMMON_APPDATA, false))
 		{
 			std::wstring basePath(wszAppDataPath);
-			basePath += L"\\Path of Building\\Launch.lua";
-			if (IsValidLuaFile(basePath, firstLine))
+			basePath += L"\\Path of Building\\";
+			if (FindLaunchLua(basePath, commandLine, firstLine))
 			{
-				commandLine.insert(commandLine.begin() + 1, basePath);
 				return true;
 			}
 		}
