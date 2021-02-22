@@ -74,20 +74,63 @@ bool IsValidLuaFile(const std::wstring &path, std::string &firstLine)
 
 bool FindLaunchLua(std::wstring basePath, std::vector<std::wstring> &commandLine, std::string &firstLine)
 {
-	std::wstring launchPath = basePath + L"Launch.lua";
+	// Unify path separator characters
+	for (size_t i = 0; i < basePath.length(); i++)
+	{
+		if (basePath[i] == L'/')
+		{
+			basePath[i] = L'\\';
+		}
+	}
+
+	// Remove the trailing slash if it exists
+	if (basePath[basePath.size() - 1] == L'\\')
+	{
+		basePath = basePath.substr(0, basePath.size() - 1);
+	}
+
+	// Look for Launch.lua directly in the base path
+	std::wstring launchPath = basePath + L"\\Launch.lua";
 	if (IsValidLuaFile(launchPath, firstLine))
 	{
 		commandLine.insert(commandLine.begin() + 1, launchPath);
 		return true;
 	}
 
-	launchPath = basePath + L"src\\Launch.lua";
+	// Look for src\\Launch.lua
+	launchPath = basePath + L"\\src\\Launch.lua";
 	if (IsValidLuaFile(launchPath, firstLine))
 	{
 		commandLine.insert(commandLine.begin() + 1, launchPath);
 		return true;
 	}
 
+	// If the base path ends with "runtime" then strip that off, append "src" and look for Launch.lua there
+	static const std::wstring runtime = L"runtime";
+	if (basePath.length() > runtime.length() + 1)
+	{
+		// Find the last slash
+		const size_t lastSlash = basePath.find_last_of(L'\\');
+		if (lastSlash != std::wstring::npos)
+		{
+			// Extract the full subdirectory name
+			std::wstring subDir = basePath.substr(lastSlash + 1);
+			for (size_t i = 0; i < subDir.size(); i++)
+			{
+				subDir[i] = towlower(subDir[i]);
+			}
+			if (subDir == runtime)
+			{
+				std::wstring parentPath = basePath.substr(0, lastSlash);
+				launchPath = parentPath + L"\\src\\Launch.lua";
+				if (IsValidLuaFile(launchPath, firstLine))
+				{
+					commandLine.insert(commandLine.begin() + 1, launchPath);
+					return true;
+				}
+			}
+		}
+	}
 	return false;
 }
 
@@ -110,7 +153,7 @@ bool InsertLaunchLua(std::vector<std::wstring> &commandLine, std::string &firstL
 
 	// Search for the Launch.lua file in various locations it may exist
 
-	// Look in the same directory as the executable as well as the "src" folder within that
+	// Look in the same directory as the executable
 	{
 		wchar_t wszModuleFilename[MAX_PATH]{};
 		if (GetModuleFileName(nullptr, wszModuleFilename, MAX_PATH) > 0)
