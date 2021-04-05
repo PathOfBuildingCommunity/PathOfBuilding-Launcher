@@ -72,6 +72,24 @@ bool IsValidLuaFile(const std::wstring &path, std::string &firstLine)
 	return true;
 }
 
+bool InsertPath(std::vector<std::wstring> &commandLine, std::wstring path)
+{
+	DWORD requiredLength = GetShortPathName(path.c_str(), nullptr, 0);
+	if (requiredLength == 0)
+	{
+		return false;
+	}
+
+	std::wstring shortPath(requiredLength, L'\0');
+	requiredLength = GetShortPathName(path.c_str(), shortPath.data(), requiredLength);
+	if (requiredLength == 0)
+	{
+		return false;
+	}
+
+	commandLine.insert(commandLine.begin() + 1, shortPath);
+}
+
 bool FindLaunchLua(std::wstring basePath, std::vector<std::wstring> &commandLine, std::string &firstLine)
 {
 	// Unify path separator characters
@@ -93,16 +111,14 @@ bool FindLaunchLua(std::wstring basePath, std::vector<std::wstring> &commandLine
 	std::wstring launchPath = basePath + L"\\Launch.lua";
 	if (IsValidLuaFile(launchPath, firstLine))
 	{
-		commandLine.insert(commandLine.begin() + 1, launchPath);
-		return true;
+		return InsertPath(commandLine, launchPath);
 	}
 
 	// Look for src\\Launch.lua
 	launchPath = basePath + L"\\src\\Launch.lua";
 	if (IsValidLuaFile(launchPath, firstLine))
 	{
-		commandLine.insert(commandLine.begin() + 1, launchPath);
-		return true;
+		return InsertPath(commandLine, launchPath);
 	}
 
 	// If the base path ends with "runtime" then strip that off, append "src" and look for Launch.lua there
@@ -125,8 +141,7 @@ bool FindLaunchLua(std::wstring basePath, std::vector<std::wstring> &commandLine
 				launchPath = parentPath + L"\\src\\Launch.lua";
 				if (IsValidLuaFile(launchPath, firstLine))
 				{
-					commandLine.insert(commandLine.begin() + 1, launchPath);
-					return true;
+					return InsertPath(commandLine, launchPath);
 				}
 			}
 		}
@@ -219,21 +234,21 @@ bool InsertLaunchLua(std::vector<std::wstring> &commandLine, std::string &firstL
 	return false;
 }
 
-std::vector<std::string> ConvertToUTF8(std::vector<std::wstring> commandLine)
+std::vector<std::string> ConvertToACP(std::vector<std::wstring> commandLine)
 {
-	std::vector<std::string> commandLineUTF8;
+	std::vector<std::string> commandLineACP;
 	if (commandLine.size() > 0)
 	{
-		commandLineUTF8.reserve(commandLine.size());
+		commandLineACP.reserve(commandLine.size());
 		for (const std::wstring &param : commandLine)
 		{
-			int dwUTF8Size = WideCharToMultiByte(CP_UTF8, 0, param.c_str(), (int)param.size(), NULL, 0, NULL, NULL);
-			std::string paramUTF8(dwUTF8Size, 0);
-			WideCharToMultiByte(CP_UTF8, 0, param.c_str(), (int)param.size(), paramUTF8.data(), dwUTF8Size, NULL, NULL);
-			commandLineUTF8.emplace_back(std::move(paramUTF8));
+			int dwACPSize = WideCharToMultiByte(CP_ACP, 0, param.c_str(), (int)param.size(), NULL, 0, NULL, NULL);
+			std::string paramACP(dwACPSize, 0);
+			WideCharToMultiByte(CP_ACP, 0, param.c_str(), (int)param.size(), paramACP.data(), dwACPSize, NULL, NULL);
+			commandLineACP.emplace_back(std::move(paramACP));
 		}
 	}
-	return commandLineUTF8;
+	return commandLineACP;
 }
 
 void InitConsole()
@@ -300,18 +315,18 @@ int CALLBACK wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 	}
 
 	// Create a utf8 version of the commandline parameters
-	std::vector<std::string> commandLineUTF8 = ConvertToUTF8(commandLine);
+	std::vector<std::string> commandLineACP = ConvertToACP(commandLine);
 
 	// Remove the first commandline argument as the scripts don't care about that.
-	commandLineUTF8.erase(commandLineUTF8.begin());
+	commandLineACP.erase(commandLineACP.begin());
 
 	// Convert the commandline parameters to a form the DLL can understand
 	size_t dwTotalParamSize = 0;
-	for (const std::string &param : commandLineUTF8)
+	for (const std::string &param : commandLineACP)
 	{
 		dwTotalParamSize += param.size() + 1;
 	}
-	size_t dwNumParams = commandLineUTF8.size();
+	size_t dwNumParams = commandLineACP.size();
 	std::unique_ptr<char[]> pParamBuf = std::make_unique<char[]>(dwTotalParamSize);
 	char *pCurParamBufLoc = pParamBuf.get();
 
@@ -320,7 +335,7 @@ int CALLBACK wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 	{
 		ppParamList[i] = pCurParamBufLoc;
 
-		const std::string &param = commandLineUTF8[i];
+		const std::string &param = commandLineACP[i];
 		memcpy(pCurParamBufLoc, param.c_str(), param.size() + 1);
 		pCurParamBufLoc += param.size() + 1;
 	}
