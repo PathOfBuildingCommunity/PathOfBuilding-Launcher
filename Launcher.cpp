@@ -7,6 +7,11 @@
 #include "SafeHandle.h"
 #include "StringUtils.h"
 
+// Enable if the launcher should convert the path of the launch.lua to a "short" windows path.
+// This caused an issue with how SimpleGraphic.dll compares the path to its own, so settings and builds weren't found,
+// so it's disabled for now.
+constexpr auto USE_SHORT_PATHS = false;
+
 std::vector<std::wstring> ParseCommandLine()
 {
 	std::vector<std::wstring> commandLine;
@@ -72,22 +77,30 @@ bool IsValidLuaFile(const std::wstring &path, std::string &firstLine)
 	return true;
 }
 
-bool InsertPath(std::vector<std::wstring> &commandLine, std::wstring path)
+bool InsertPath(std::vector<std::wstring> &commandLine, const std::wstring &path)
 {
-	DWORD requiredLength = GetShortPathName(path.c_str(), nullptr, 0);
-	if (requiredLength == 0)
+	if constexpr (USE_SHORT_PATHS)
 	{
-		return false;
-	}
+		DWORD requiredLength = GetShortPathName(path.c_str(), nullptr, 0);
+		if (requiredLength == 0)
+		{
+			return false;
+		}
 
-	std::wstring shortPath(requiredLength, L'\0');
-	requiredLength = GetShortPathName(path.c_str(), shortPath.data(), requiredLength);
-	if (requiredLength == 0)
+		std::wstring shortPath(requiredLength, L'\0');
+		requiredLength = GetShortPathName(path.c_str(), shortPath.data(), requiredLength);
+		if (requiredLength == 0)
+		{
+			return false;
+		}
+
+		commandLine.insert(commandLine.begin() + 1, shortPath);
+	}
+	else
 	{
-		return false;
+		commandLine.insert(commandLine.begin() + 1, path);
 	}
-
-	commandLine.insert(commandLine.begin() + 1, shortPath);
+	return true;
 }
 
 bool FindLaunchLua(std::wstring basePath, std::vector<std::wstring> &commandLine, std::string &firstLine)
