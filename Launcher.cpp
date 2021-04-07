@@ -247,6 +247,13 @@ bool InsertLaunchLua(std::vector<std::wstring> &commandLine, std::string &firstL
 	return false;
 }
 
+bool isDevScript(std::wstring scriptPath) {
+	int finalSlash = scriptPath.find_last_of('\\');
+	std::wstring folderName = scriptPath.substr(0, finalSlash).substr(scriptPath.substr(0, finalSlash).find_last_of(L'\\') + 1);
+	wprintf(L"Folder: %s", folderName);
+	return folderName == L"src";
+}
+
 std::vector<std::string> ConvertToACP(std::vector<std::wstring> commandLine)
 {
 	std::vector<std::string> commandLineACP;
@@ -301,6 +308,10 @@ int CALLBACK wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 	if (wcsstr(dllName.c_str(), L".dll") == nullptr)
 	{
 		dllName += L".dll";
+	}
+
+	if (isDevScript(commandLine[1])) {
+		LoadLibrary(L"lua51.dll");
 	}
 
 	// Load the DLL
