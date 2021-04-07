@@ -250,7 +250,6 @@ bool InsertLaunchLua(std::vector<std::wstring> &commandLine, std::string &firstL
 bool isDevScript(std::wstring scriptPath) {
 	int finalSlash = scriptPath.find_last_of('\\');
 	std::wstring folderName = scriptPath.substr(0, finalSlash).substr(scriptPath.substr(0, finalSlash).find_last_of(L'\\') + 1);
-	wprintf(L"Folder: %s", folderName);
 	return folderName == L"src";
 }
 
