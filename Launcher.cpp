@@ -247,11 +247,19 @@ bool InsertLaunchLua(std::vector<std::wstring> &commandLine, std::string &firstL
 	return false;
 }
 
-bool isDevScript(std::wstring scriptPath) {
-	int finalSlash = scriptPath.find_last_of('\\');
-	int nextToLastSlash = scriptPath.find_last_of(L'\\', finalSlash - 1) + 1;
-	std::wstring folderName(&scriptPath[nextToLastSlash], &scriptPath[finalSlash]);
-	return folderName == L"src";
+bool isDevScript(std::wstring scriptPath) 
+{
+	const auto finalSlash = scriptPath.find_last_of(L'\\');
+	if (finalSlash == std::wstring::npos || finalSlash == 0)
+	{
+		return false;
+	}
+	const auto nextToLastSlash = scriptPath.find_last_of(L'\\', finalSlash - 1);
+	if (nextToLastSlash == std::wstring::npos)
+	{
+		return false;
+	}
+	return scriptPath.compare(nextToLastSlash + 1, finalSlash - 1 - nextToLastSlash, L"src") == 0;
 }
 
 std::vector<std::string> ConvertToACP(std::vector<std::wstring> commandLine)
