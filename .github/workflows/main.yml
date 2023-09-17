@@ -9,7 +9,7 @@ jobs:
                   - name: Setup MSBuild
                     uses: microsoft/setup-msbuild@v1
                   - name: Build EXE
-                    run: 'msbuild PathOfBuilding-Launcher.vcxproj /p:configuration=release /p:platform=win32'
+                    run: 'msbuild PathOfBuilding-Launcher.vcxproj /p:configuration=release /p:platform=x64'
                   - name: Archive EXE
                     uses: actions/upload-artifact@v1.0.0
                     with:
