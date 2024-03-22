@@ -1,5 +1,5 @@
 name: Build EXE
-on: push     
+on: [push, workflow_dispatch]     
 jobs:
   build_exe:
           runs-on: windows-latest
