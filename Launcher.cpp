@@ -271,21 +271,21 @@ bool isDevScript(std::wstring scriptPath)
 	return scriptPath.compare(nextToLastSlash + 1, finalSlash - 1 - nextToLastSlash, L"src") == 0;
 }
 
-std::vector<std::string> ConvertToACP(std::vector<std::wstring> commandLine)
+std::vector<std::string> ConvertToUTF8(std::vector<std::wstring> commandLine)
 {
-	std::vector<std::string> commandLineACP;
+	std::vector<std::string> commandLineUTF8;
 	if (commandLine.size() > 0)
 	{
-		commandLineACP.reserve(commandLine.size());
+		commandLineUTF8.reserve(commandLine.size());
 		for (const std::wstring &param : commandLine)
 		{
-			int dwACPSize = WideCharToMultiByte(CP_ACP, 0, param.c_str(), (int)param.size(), NULL, 0, NULL, NULL);
-			std::string paramACP(dwACPSize, 0);
-			WideCharToMultiByte(CP_ACP, 0, param.c_str(), (int)param.size(), paramACP.data(), dwACPSize, NULL, NULL);
-			commandLineACP.emplace_back(std::move(paramACP));
+			int dwUTF8Size = WideCharToMultiByte(CP_UTF8, 0, param.c_str(), (int)param.size(), NULL, 0, NULL, NULL);
+			std::string paramUTF8(dwUTF8Size, 0);
+			WideCharToMultiByte(CP_UTF8, 0, param.c_str(), (int)param.size(), paramUTF8.data(), dwUTF8Size, NULL, NULL);
+			commandLineUTF8.emplace_back(std::move(paramUTF8));
 		}
 	}
-	return commandLineACP;
+	return commandLineUTF8;
 }
 
 void InitConsole()
@@ -356,18 +356,18 @@ int CALLBACK wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 	}
 
 	// Create a utf8 version of the commandline parameters
-	std::vector<std::string> commandLineACP = ConvertToACP(commandLine);
+	std::vector<std::string> commandLineUTF8 = ConvertToUTF8(commandLine);
 
 	// Remove the first commandline argument as the scripts don't care about that.
-	commandLineACP.erase(commandLineACP.begin());
+	commandLineUTF8.erase(commandLineUTF8.begin());
 
 	// Convert the commandline parameters to a form the DLL can understand
 	size_t dwTotalParamSize = 0;
-	for (const std::string &param : commandLineACP)
+	for (const std::string &param : commandLineUTF8)
 	{
 		dwTotalParamSize += param.size() + 1;
 	}
-	size_t dwNumParams = commandLineACP.size();
+	size_t dwNumParams = commandLineUTF8.size();
 	std::unique_ptr<char[]> pParamBuf = std::make_unique<char[]>(dwTotalParamSize);
 	char *pCurParamBufLoc = pParamBuf.get();
 
@@ -376,13 +376,13 @@ int CALLBACK wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 	{
 		ppParamList[i] = pCurParamBufLoc;
 
-		const std::string &param = commandLineACP[i];
+		const std::string &param = commandLineUTF8[i];
 		memcpy(pCurParamBufLoc, param.c_str(), param.size() + 1);
 		pCurParamBufLoc += param.size() + 1;
 	}
 
 	// Call into the DLL
-	int dwStatus = RunLuaFile(dwNumParams, ppParamList.get());
+	int dwStatus = RunLuaFile((int)dwNumParams, ppParamList.get());
 
 	// Cleanup the DLL
 	FreeLibrary(hDLL);
