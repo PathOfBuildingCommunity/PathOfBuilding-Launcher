@@ -199,12 +199,16 @@ bool InsertLaunchLua(std::vector<std::wstring> &commandLine, std::string &firstL
 	}
 
 	// Check for the registry key left by the installer
-	// HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Path of Building Community\InstallLocation
+	// HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Path of Building Community[-PoE2]\InstallLocation
 	{
 		DWORD dwType = 0;
 		DWORD dwSize = MAX_PATH;
 		wchar_t wszValue[MAX_PATH]{};
+#ifndef GAMEVERSION_2
 		DWORD dwStatus = RegGetValue(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Path of Building Community", L"InstallLocation", RRF_RT_REG_SZ, &dwType, wszValue, &dwSize);
+#else
+		DWORD dwStatus = RegGetValue(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Path of Building Community-PoE2", L"InstallLocation", RRF_RT_REG_SZ, &dwType, wszValue, &dwSize);
+#endif	
 		if (dwStatus == ERROR_SUCCESS && dwSize > sizeof(wchar_t))
 		{
 			// Strip the quotes around the value
@@ -222,14 +226,18 @@ bool InsertLaunchLua(std::vector<std::wstring> &commandLine, std::string &firstL
 		if (SHGetSpecialFolderPath(nullptr, wszAppDataPath, CSIDL_APPDATA, false))
 		{
 			std::wstring basePath(wszAppDataPath);
+#ifndef GAMEVERSION_2
 			basePath += L"\\Path of Building Community\\";
+#else
+			basePath += L"\\Path of Building Community-PoE2\\";
+#endif
 			if (FindLaunchLua(basePath, commandLine, firstLine))
 			{
 				return true;
 			}
 		}
 	}
-
+#ifndef GAMEVERSION_2
 	// Look in the %PROGRAMDATA% folder, which is where the original PoB installer puts the lua files
 	{
 		wchar_t wszAppDataPath[MAX_PATH]{};
@@ -243,6 +251,7 @@ bool InsertLaunchLua(std::vector<std::wstring> &commandLine, std::string &firstL
 			}
 		}
 	}
+#endif
 
 	return false;
 }
