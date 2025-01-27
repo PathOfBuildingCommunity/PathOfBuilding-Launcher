@@ -199,7 +199,7 @@ bool InsertLaunchLua(std::vector<std::wstring> &commandLine, std::string &firstL
 	}
 
 	// Check for the registry key left by the installer
-	// HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Path of Building Community[-PoE2]\InstallLocation
+	// HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Path of Building Community[ (PoE2)]\InstallLocation
 	{
 		DWORD dwType = 0;
 		DWORD dwSize = MAX_PATH;
@@ -207,7 +207,7 @@ bool InsertLaunchLua(std::vector<std::wstring> &commandLine, std::string &firstL
 #ifndef GAMEVERSION_2
 		DWORD dwStatus = RegGetValue(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Path of Building Community", L"InstallLocation", RRF_RT_REG_SZ, &dwType, wszValue, &dwSize);
 #else
-		DWORD dwStatus = RegGetValue(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Path of Building Community-PoE2", L"InstallLocation", RRF_RT_REG_SZ, &dwType, wszValue, &dwSize);
+		DWORD dwStatus = RegGetValue(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Path of Building Community (PoE2)", L"InstallLocation", RRF_RT_REG_SZ, &dwType, wszValue, &dwSize);
 #endif	
 		if (dwStatus == ERROR_SUCCESS && dwSize > sizeof(wchar_t))
 		{
@@ -229,7 +229,7 @@ bool InsertLaunchLua(std::vector<std::wstring> &commandLine, std::string &firstL
 #ifndef GAMEVERSION_2
 			basePath += L"\\Path of Building Community\\";
 #else
-			basePath += L"\\Path of Building Community-PoE2\\";
+			basePath += L"\\Path of Building Community (PoE2)\\";
 #endif
 			if (FindLaunchLua(basePath, commandLine, firstLine))
 			{
